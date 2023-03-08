@@ -1,2 +1,0 @@
-# nop-api
-some description
