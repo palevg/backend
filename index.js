@@ -1,16 +1,15 @@
-import express from 'express';
-import fs from 'fs';
-import multer from 'multer';
-import cors from 'cors';
+require('dotenv').config();
+const express = require('express');
+const fs = require('fs');
+const multer = require('multer');
+const cors = require('cors');
 
-import { registerValidation, loginValidation, postCreateValidation } from './validations.js';
-
-import checkAuth from './utils/checkAuth.js';
-import handleValidationErrors from './utils/handleValidationErrors.js';
-
-import * as FirmaController from './controllers/FirmaController.js';
-import * as PersonController from './controllers/PersonController.js';
-import * as UserController from './controllers/UserController.js';
+const { loginValidation } = require('./validations.js');
+const checkAuth = require('./utils/checkAuth.js');
+const handleValidationErrors = require('./utils/handleValidationErrors.js');
+const FirmaController = require('./controllers/FirmaController.js');
+const PersonController = require('./controllers/PersonController.js');
+const UserController = require('./controllers/UserController.js');
 
 const app = express();
 
@@ -42,14 +41,16 @@ app.post('/upload', checkAuth, upload.single('image'), (req, res) => {
   });
 });
 
-app.get('/enterprs', FirmaController.getAll);
-app.get('/enterprs/:id', FirmaController.getOne);
-app.get('/peoples/:id', PersonController.getOne);
+app.get('/enterprs', checkAuth, FirmaController.getAll);
+app.get('/enterprs/:id', checkAuth, FirmaController.getOne);
+// app.get('/peoples', PersonController.getAll);
+app.post('/peoples', checkAuth, PersonController.getSome);
+app.get('/peoples/:id', checkAuth, PersonController.getOne);
 // app.post('/enterprs', checkAuth, enterprCreateValidation, handleValidationErrors, FirmaController.create);
 // app.delete('/enterprs/:id', checkAuth, FirmaController.remove);
 // app.patch('/enterprs/:id', checkAuth, enterprCreateValidation, handleValidationErrors, FirmaController.update);
 
-app.listen(process.env.PORT || 4444, (err) => {
+app.listen(process.env.PORT, (err) => {
   if (err) {
     return console.log(err);
   }

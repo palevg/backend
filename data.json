@@ -1,8 +1,0 @@
-{
-    "database": {
-        "host": "192.168.0.70",
-        "user": "monah",
-        "password": null,
-        "name": "license"
-    }
-}

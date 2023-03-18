@@ -1,15 +1,19 @@
-import db from "./config.js";
+const mysql2 = require('mysql2');
+const connData = require('./config.js');
 
-export const getAll = (req, res) => {
+const getAll = (req, res) => {
+  const db = mysql2.createConnection(connData);
   db.query("SELECT * FROM enterprs WHERE Id IN (SELECT EnterpriseId FROM licenze)", (err, results) => {
     if (err) return res.status(500).json({ message: 'Не вдалося отримати дані' });
-    res.json(results);    // console.log('Backend params: ' + req.params.limit);
+    res.json(results);
   });
+  db.end();
 };
 
-export const getOne = (req, res) => {
+const getOne = (req, res) => {
   const id = req.params.id;
   let fullInfo;
+  const db = mysql2.createConnection(connData);
   db.query("SELECT * FROM enterprs WHERE Id=?", id, (err, results) => {
     if (err) return res.status(500).json({ message: 'Не вдалося отримати дані про підприємство' });
     results.map((item) => { item.res_key = 0; });
@@ -38,7 +42,13 @@ export const getOne = (req, res) => {
   db.query("SELECT * FROM objects WHERE Enterprise=?", id, (err, results) => {
     results.map((item) => { if (!item.res_key) item.res_key = 6; });
     fullInfo = [...fullInfo, ...results];
+  });
+  db.query("SELECT * FROM violat WHERE EnterpriseId=?", id, (err, results) => {
+    results.map((item) => { if (!item.res_key) item.res_key = 7; });
+    fullInfo = [...fullInfo, ...results];
     res.json(fullInfo);
   });
-  // db.end();
+  db.end();
 };
+
+module.exports = { getAll, getOne };

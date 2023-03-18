@@ -1,14 +1,16 @@
-import mysql2 from 'mysql2';
+const connData = {
+  host: process.env.MYSQL_HOST,
+  port: process.env.MYSQL_PORT,
+  user: process.env.MYSQL_USER,
+  password: process.env.MYSQL_PASSWORD,
+  database: process.env.MYSQL_DATABASE
+}
 
-const db = mysql2.createConnection({
-  host: "192.168.0.70",
-  user: "monah",
-  password: null,
-  database: "license"
-});
 
-db.connect((err) => {
-  if (err) return console.error("Ошибка: " + err.message);
-});
 
-export default db;
+// db.connect((err) => {
+//   console.log('DB connected');
+//   if (err) return console.error("Помилка: " + err.message);
+// });
+
+module.exports = connData;
