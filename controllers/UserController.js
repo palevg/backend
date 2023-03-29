@@ -3,47 +3,112 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const connData = require('./config.js');
 
+const writeConnectInfo = (sql, data) => {
+  const db_acc = mysql2.createConnection(connData);
+  db_acc.query(sql, data, (err, results) => {
+    if (err) console.log(err);
+  });
+  db_acc.end();
+}
+
 const login = (req, res) => {
   const db = mysql2.createConnection(connData);
-  db.query("SELECT * FROM users WHERE email=?", req.body.email, (err, data) => {
+  db.query("SELECT * FROM users WHERE Email=?", req.body.email, (err, data) => {
     if (err) return res.status(500).json({ message: 'Не вдалося авторизуватись', error: err });
-    if (data.length === 0) return res.status(404).json({ message: "Користувач не знайдений!" });
 
-    const isValidPass = bcrypt.compareSync(req.body.password, data[0].passwordHash);
+    if (data.length === 0) {
+      writeConnectInfo(
+        "INSERT INTO sessions(UserId, UserName, DateTimeStart, DateTimeFinish, HostIP) VALUES(?, ?, ?, ?, ?)",
+        [1, req.body.email, "У доступі відмовлено", new Date().toLocaleTimeString("uk") + " " + new Date().toLocaleDateString("uk"), req.body.ip]
+      );
+      return res.status(404).json({ message: "Користувач не знайдений!" });
+    }
 
-    // const passCreate = async (p) => {
-    //   const pas1 = p;
-    //   const salt = await bcrypt.genSalt(10);
-    //   const hash1 = await bcrypt.hash(pas1, salt);
-    //   console.log(hash1);
-    // }
-    // passCreate('12345');
+    const isValidPass = bcrypt.compareSync(req.body.password, data[0].Password);
 
     if (!isValidPass) {
+      writeConnectInfo(
+        "INSERT INTO sessions(UserId, UserName, Level, DateTimeStart, DateTimeFinish, HostIP) VALUES(?, ?, ?, ?, ?, ?)",
+        [data[0].Id, data[0].FullName, data[0].accLevel, "У доступі відмовлено", new Date().toLocaleTimeString("uk") + " " + new Date().toLocaleDateString("uk"), req.body.ip]
+      );
       return res.status(400).json({ message: 'Не вірний логін або пароль' });
     }
 
-    const token = jwt.sign({ id: data[0].Id }, process.env.JWT_KEY, { expiresIn: '30d' });
-    const { passwordHash, ...userData } = data[0];
+    const db_acc = mysql2.createConnection(connData);
+    db_acc.query("SELECT MAX(id) AS id FROM sessions", (err, result) => {
+      if (err) console.log(err)
+      else data[0].accId = result[0].id + 1;
+    });
+    db_acc.query("INSERT INTO sessions(UserId, UserName, Level, DateTimeStart, HostIP) VALUES(?, ?, ?, ?, ?)",
+      [data[0].Id, data[0].FullName, data[0].accLevel, new Date().toLocaleTimeString("uk") + " " + new Date().toLocaleDateString("uk"), req.body.ip],
+      (err, result) => {
+        if (err) console.log(err);
+      });
+    db_acc.end();
 
-    res.status(200).json({ ...userData, token });
+    setTimeout(() => {
+      data[0].acc = 1;
+      if (bcrypt.compareSync("user", data[0].accLevel)) data[0].acc = 2;
+      if (bcrypt.compareSync("user-pro", data[0].accLevel)) data[0].acc = 3;
+
+      const token = jwt.sign({ id: data[0].Id, accId: data[0].accId, acc: data[0].acc }, process.env.JWT_KEY, { expiresIn: '30d' });
+      const { Password, ...userData } = data[0];
+
+      res.status(200).json({ ...userData, token });
+    }, "500");
   });
   db.end();
 };
 
+const update = (req, res) => {
+  const db = mysql2.createConnection(connData);
+  db.query("UPDATE users SET FullName=?, Posada=?, Email=? WHERE Id=?",
+  [req.body.fullName, req.body.posada, req.body.email, req.body.id], (err, results) => {
+    if (err) return res.status(500).json({ message: 'Не вдалося авторизуватись', error: err });
+    res.status(200).json("Профіль оновлено успішно!");
+  });
+  db.end();
+}
+
+const logout = (req, res) => {
+  writeConnectInfo(
+    "UPDATE sessions SET DateTimeFinish=? WHERE Id=?",
+    [new Date().toLocaleTimeString("uk") + " " + new Date().toLocaleDateString("uk"), req.body.accId]
+  );
+}
+
 const getMe = (req, res) => {
+  // const passCreate = async (p) => {
+  //   const pas1 = p;
+  //   const salt = await bcrypt.genSalt(10);
+  //   const hash1 = await bcrypt.hash(pas1, salt);
+  //   console.log(hash1);
+  // }
+  // passCreate('Ml&F7Vv0Zh');
+
   const db = mysql2.createConnection(connData);
   db.query("SELECT * FROM users WHERE Id=?", req.userId, (err, data) => {
     if (err) return res.status(500).json({ message: 'Немає доступу' });
     if (data.length === 0) return res.status(404).json({ message: 'Користувач не знайдений!' });
 
-    const { passwordHash, ...userData } = data[0];
+    data[0].accId = req.userAccId;
+    data[0].acc = req.userAcc;
+    const { Password, ...userData } = data[0];
     res.json(userData);
   });
   db.end();
 };
 
-module.exports = { login, getMe };
+const getSessionsList = (req, res) => {
+  const db = mysql2.createConnection(connData);
+  db.query("SELECT * FROM sessions s, users u WHERE u.Id=s.UserId ORDER BY s.Id DESC", (err, results) => {
+    if (err) return res.status(500).json({ message: 'Не вдалося отримати дані' });
+    res.json(results);
+  });
+  db.end();
+};
+
+module.exports = { login, update, logout, getMe, getSessionsList };
 
 // export const register = async (req, res) => {
 //   try {
@@ -55,7 +120,7 @@ module.exports = { login, getMe };
 //       email: req.body.email,
 //       fullName: req.body.fullName,
 //       avatarUrl: req.body.avatarUrl,
-//       passwordHash: hash,
+//       Password: hash,
 //     });
 
 //     const user = await doc.save();
@@ -70,7 +135,7 @@ module.exports = { login, getMe };
 //       },
 //     );
 
-//     const { passwordHash, ...userData } = user._doc;
+//     const { Password, ...userData } = user._doc;
 
 //     res.json({
 //       ...userData,

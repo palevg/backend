@@ -32,14 +32,18 @@ app.use(cors());
 app.use('/uploads', express.static('uploads'));
 
 app.post('/auth/login', loginValidation, handleValidationErrors, UserController.login);
+app.post('/auth/logout', UserController.logout);
 // app.post('/auth/register', registerValidation, handleValidationErrors, UserController.register);
 app.get('/auth/me', checkAuth, UserController.getMe);
+app.patch('/auth/profile', checkAuth, UserController.update);
 
 app.post('/upload', checkAuth, upload.single('image'), (req, res) => {
   res.json({
     url: `/uploads/${req.file.originalname}`,
   });
 });
+
+app.get('/sessions', checkAuth, UserController.getSessionsList);
 
 app.get('/enterprs', checkAuth, FirmaController.getAll);
 app.get('/enterprs/:id', checkAuth, FirmaController.getOne);
