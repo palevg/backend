@@ -11,6 +11,12 @@ const writeConnectInfo = (sql, data) => {
   db_acc.end();
 }
 
+// const passHashing = async (pass) => {
+//   const salt = await bcrypt.genSalt(10);
+//   const hash = await bcrypt.hash(pass, salt);
+//   return hash;
+// }
+
 const login = (req, res) => {
   const db = mysql2.createConnection(connData);
   db.query("SELECT * FROM users WHERE Email=?", req.body.email, (err, data) => {
@@ -35,6 +41,10 @@ const login = (req, res) => {
     }
 
     const db_acc = mysql2.createConnection(connData);
+    // db_acc.query("SHOW TABLE STATUS FROM `nop` LIKE 'sessions'", (err, result) => {
+    //   if (err) console.log(err)
+    //   else console.log(result[0].Auto_increment);
+    // });
     db_acc.query("SELECT MAX(id) AS id FROM sessions", (err, result) => {
       if (err) console.log(err)
       else data[0].accId = result[0].id + 1;
@@ -60,13 +70,38 @@ const login = (req, res) => {
   db.end();
 };
 
-const update = (req, res) => {
+const update = async (req, res) => {
   const db = mysql2.createConnection(connData);
-  db.query("UPDATE users SET FullName=?, Posada=?, Email=? WHERE Id=?",
-  [req.body.fullName, req.body.posada, req.body.email, req.body.id], (err, results) => {
-    if (err) return res.status(500).json({ message: 'Не вдалося авторизуватись', error: err });
-    res.status(200).json("Профіль оновлено успішно!");
-  });
+  if (req.body.changePassword) {
+    const salt = await bcrypt.genSalt(10);
+    const hash = await bcrypt.hash(req.body.newPassword, salt);
+
+    db.query("SELECT * FROM users WHERE Id=?", req.body.id, (err, data) => {
+      if (err) return res.status(500).json({ message: 'Не вдалося перевірити ідентичність паролю у профілі', error: err });
+      const isValidPass = bcrypt.compareSync(req.body.oldPassword, data[0].Password);
+      console.log(req.body.oldPassword);
+      console.log("valid? ", isValidPass);
+
+      if (isValidPass) {
+        const db2 = mysql2.createConnection(connData);
+        console.log("newPassword ", hash);
+        db2.query("UPDATE users SET FullName=?, Posada=?, Email=?, Password=? WHERE Id=?",
+          [req.body.fullName, req.body.posada, req.body.email, hash, req.body.id], (err, results) => {
+            if (err) return res.status(500).json({ message: 'Не вдалося оновити дані профілю', error: err });
+            res.status(200).json("Профіль оновлено успішно!");
+          });
+        db2.end();
+      } else {
+        res.status(500).json("Профіль не оновлено - невірно вказаний поточний пароль!");
+      }
+    });
+  } else {
+    db.query("UPDATE users SET FullName=?, Posada=?, Email=? WHERE Id=?",
+      [req.body.fullName, req.body.posada, req.body.email, req.body.id], (err, results) => {
+        if (err) return res.status(500).json({ message: 'Не вдалося авторизуватись', error: err });
+        res.status(200).json("Профіль оновлено успішно!");
+      });
+  }
   db.end();
 }
 
@@ -78,14 +113,6 @@ const logout = (req, res) => {
 }
 
 const getMe = (req, res) => {
-  // const passCreate = async (p) => {
-  //   const pas1 = p;
-  //   const salt = await bcrypt.genSalt(10);
-  //   const hash1 = await bcrypt.hash(pas1, salt);
-  //   console.log(hash1);
-  // }
-  // passCreate('Ml&F7Vv0Zh');
-
   const db = mysql2.createConnection(connData);
   db.query("SELECT * FROM users WHERE Id=?", req.userId, (err, data) => {
     if (err) return res.status(500).json({ message: 'Немає доступу' });
