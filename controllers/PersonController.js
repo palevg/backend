@@ -77,7 +77,7 @@ const updatePersonFounders = (req, res) => {
   const db = mysql2.createConnection(connData);
   db.query("UPDATE p_founds SET DateEnter=?, StatutPart=?, byUserId=? WHERE Id=?",
     [convertDateToISO(req.body.dateEnter), req.body.statutPart, req.body.editor, req.body.id], (err, results) => {
-      if (err) return res.status(500).json({ message: 'Не вдалося оновити дані профілю', error: err });
+      if (err) return res.status(500).json({ message: 'Не вдалося оновити дані про особу!', error: err });
     });
   updatePerson(db, req, res);
   db.end();
@@ -87,10 +87,52 @@ const updatePersonHeads = (req, res) => {
   const db = mysql2.createConnection(connData);
   db.query("UPDATE p_heads SET Posada=?, DateStartWork=?, byUserId=? WHERE Id=?",
     [req.body.posada, convertDateToISO(req.body.dateStartWork), req.body.editor, req.body.id], (err, results) => {
-      if (err) return res.status(500).json({ message: 'Не вдалося оновити дані профілю', error: err });
+      if (err) return res.status(500).json({ message: 'Не вдалося оновити дані про особу!', error: err });
     });
   updatePerson(db, req, res);
   db.end();
 }
 
-module.exports = { getSome, getOne, updatePersonFounders, updatePersonHeads };
+const insertNewPerson = (db, req, res) => {
+  db.query("INSERT INTO peoples(Indnum, Name, Birth, BirthPlace, LivePlace, Pasport, PaspDate, PaspPlace, PhotoFile, Osvita, byUserId) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    [req.body.indnum, req.body.fullName, convertDateToISO(req.body.birthDate), req.body.birthPlace, req.body.livePlace, req.body.pasport,
+    convertDateToISO(req.body.paspDate), req.body.paspPlace, req.body.foto, req.body.osvita, req.body.editor], (err, results) => {
+      if (err) return res.status(500).json({ message: 'Не вдалося зберегти дані про нову особу!', error: err });
+    });
+}
+
+const insertPersonFounders = (req, res) => {
+  const db = mysql2.createConnection(connData);
+  db.query("SHOW TABLE STATUS FROM `nop` LIKE 'peoples'", (err, result) => {
+    if (err) console.log(err)
+    else req.body.id = result[0].Auto_increment;
+  });
+  insertNewPerson(db, req, res);
+  setTimeout(() => {
+    db.query("INSERT INTO p_founds(HumanId, Enterprise, DateEnter, StatutPart, byUserId) VALUES(?, ?, ?, ?, ?)",
+      [req.body.id, req.body.enterpr, convertDateToISO(req.body.dateEnter), req.body.statutPart, req.body.editor], (err, results) => {
+        if (err) return res.status(500).json({ message: 'Не вдалося зберегти дані про нового співзасновника!', error: err });
+        res.status(200).json("Дані про нового співзасновника збережено успішно!");
+      });
+    db.end();
+  }, "200");
+}
+
+const insertPersonHeads = (req, res) => {
+  const db = mysql2.createConnection(connData);
+  db.query("SHOW TABLE STATUS FROM `nop` LIKE 'peoples'", (err, result) => {
+    if (err) console.log(err)
+    else req.body.id = result[0].Auto_increment;
+  });
+  insertNewPerson(db, req, res);
+  setTimeout(() => {
+    db.query("INSERT INTO p_heads(HumanId, Enterprise, Posada, DateStartWork, byUserId) VALUES(?, ?, ?, ?, ?)",
+      [req.body.id, req.body.enterpr, req.body.posada, convertDateToISO(req.body.dateStartWork), req.body.editor], (err, results) => {
+        if (err) return res.status(500).json({ message: 'Не вдалося зберегти дані про нового керівника!', error: err });
+        res.status(200).json("Дані про нового керівника збережено успішно!");
+      });
+    db.end();
+  }, "200");
+}
+
+module.exports = { getSome, getOne, updatePersonFounders, updatePersonHeads, insertPersonFounders, insertPersonHeads };

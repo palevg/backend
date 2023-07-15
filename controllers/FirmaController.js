@@ -98,4 +98,22 @@ const getOne = (req, res) => {
   db.end();
 };
 
-module.exports = { getSome, getOne };
+const getFounders = (req, res) => {
+  const db = mysql2.createConnection(connData);
+  db.query("SELECT * FROM peoples p, p_founds f WHERE f.HumanId=p.Id AND f.Enterprise=? ORDER BY p.Name", req.params.id, (err, results) => {
+    if (err) return res.status(500).json({ message: 'Не вдалося отримати дані про засновників підприємства' });
+    res.json(results);
+  });
+  db.end();
+}
+
+const getHeads = (req, res) => {
+  const db = mysql2.createConnection(connData);
+  db.query("SELECT * FROM peoples p, p_heads h WHERE h.HumanId=p.Id AND h.Enterprise=? ORDER BY DateStartWork,Name", req.params.id, (err, results) => {
+    if (err) return res.status(500).json({ message: 'Не вдалося отримати дані про керівників підприємства' });
+    res.json(results);
+  });
+  db.end();
+}
+
+module.exports = { getSome, getOne, getFounders, getHeads };
