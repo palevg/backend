@@ -55,6 +55,8 @@ app.post('/peoples/newfounder', checkAuth, PersonController.insertPersonFounders
 app.post('/peoples/newhead', checkAuth, PersonController.insertPersonHeads);
 app.get('/founders/:id', checkAuth, FirmaController.getFounders);
 app.get('/heads/:id', checkAuth, FirmaController.getHeads);
+app.get('/peoples/with/:name', checkAuth, PersonController.getSameNames);
+app.get('/peoples/with/:ident', checkAuth, PersonController.getSameIdent);
 // app.post('/enterprs', checkAuth, enterprCreateValidation, handleValidationErrors, FirmaController.create);
 // app.delete('/enterprs/:id', checkAuth, FirmaController.remove);
 // app.patch('/enterprs/:id', checkAuth, enterprCreateValidation, handleValidationErrors, FirmaController.update);

@@ -64,6 +64,24 @@ const getOne = (req, res) => {
   db.end();
 };
 
+const getSameNames = (req, res) => {
+  const db = mysql2.createConnection(connData);
+  db.query("SELECT * FROM peoples WHERE Name=?", req.params.name, (err, results) => {
+    if (err) return res.status(500).json({ message: 'Не вдалося отримати дані про осіб з таким же ПІБ' });
+    res.json(results);
+  });
+  db.end();
+}
+
+const getSameIdent = (req, res) => {
+  const db = mysql2.createConnection(connData);
+  db.query("SELECT * FROM peoples WHERE Indnum=?", req.params.ident, (err, results) => {
+    if (err) return res.status(500).json({ message: 'Не вдалося отримати дані про осіб з таким же ідентифікаційним кодом' });
+    res.json(results);
+  });
+  db.end();
+}
+
 const updatePerson = (db, req, res) => {
   db.query("UPDATE peoples SET Indnum=?, Name=?, Birth=?, BirthPlace=?, LivePlace=?, Pasport=?, PaspDate=?, PaspPlace=?, PhotoFile=?, Osvita=?, byUserId=? WHERE Id=?",
     [req.body.indnum, req.body.fullName, convertDateToISO(req.body.birthDate), req.body.birthPlace, req.body.livePlace, req.body.pasport,
@@ -135,4 +153,4 @@ const insertPersonHeads = (req, res) => {
   }, "200");
 }
 
-module.exports = { getSome, getOne, updatePersonFounders, updatePersonHeads, insertPersonFounders, insertPersonHeads };
+module.exports = { getSome, getOne, getSameNames, getSameIdent, updatePersonFounders, updatePersonHeads, insertPersonFounders, insertPersonHeads };
