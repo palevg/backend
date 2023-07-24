@@ -57,6 +57,7 @@ app.patch('/peoples/editfounder', checkAuth, PersonController.updatePersonFounde
 app.patch('/peoples/edithead', checkAuth, PersonController.updatePersonHead);
 app.patch('/peoples/editfoundernewplace', checkAuth, PersonController.updatePersonNewFounder);
 app.patch('/peoples/editheadnewplace', checkAuth, PersonController.updatePersonNewHead);
+app.patch('/peoples/exit', checkAuth, PersonController.exitPerson);
 app.get('/founders/:id', checkAuth, FirmaController.getFounders);
 app.get('/heads/:id', checkAuth, FirmaController.getHeads);
 // app.post('/enterprs', checkAuth, enterprCreateValidation, handleValidationErrors, FirmaController.create);

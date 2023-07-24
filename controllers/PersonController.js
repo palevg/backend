@@ -112,8 +112,8 @@ const insertPersonFounder = (req, res) => {
 }
 
 const insertNewHead = (db, req, res) => {
-  db.query("INSERT INTO p_heads(HumanId, Enterprise, Posada, DateStartWork, byUserId) VALUES(?, ?, ?, ?, ?)",
-    [req.body.humanId, req.body.enterpr, req.body.posada, convertDateToISO(req.body.dateStartWork), req.body.editor], (err, results) => {
+  db.query("INSERT INTO p_heads(HumanId, Enterprise, Posada, InCombination, SequrBoss, DateStartWork, byUserId) VALUES(?, ?, ?, ?, ?, ?, ?)",
+    [req.body.humanId, req.body.enterpr, req.body.posada, req.body.inCombination, req.body.sequrBoss, convertDateToISO(req.body.dateStartWork), req.body.editor], (err, results) => {
       if (err) return res.status(500).json({ message: 'Не вдалося зберегти дані про нового керівника!', error: err });
       res.status(200).json("Дані про нового керівника збережено успішно!");
     });
@@ -154,8 +154,8 @@ const updatePersonFounder = (req, res) => {
 const updatePersonHead = (req, res) => {
   const db = mysql2.createConnection(connData);
   updatePerson(db, req, res);
-  db.query("UPDATE p_heads SET Posada=?, DateStartWork=?, byUserId=? WHERE Id=?",
-    [req.body.posada, convertDateToISO(req.body.dateStartWork), req.body.editor, req.body.id], (err, results) => {
+  db.query("UPDATE p_heads SET Posada=?, InCombination=?, SequrBoss=?, DateStartWork=?, byUserId=? WHERE Id=?",
+    [req.body.posada, req.body.inCombination, req.body.sequrBoss, convertDateToISO(req.body.dateStartWork), req.body.editor, req.body.id], (err, results) => {
       if (err) return res.status(500).json({ message: 'Не вдалося оновити дані про керівника!', error: err });
       res.status(200).json("Зміни даних про керівника збережено успішно!");
     });
@@ -175,7 +175,27 @@ const updatePersonNewHead = (req, res) => {
   insertNewHead(db, req, res);
   db.end();
 }
+
+const exitPerson = (req, res) => {
+  const db = mysql2.createConnection(connData);
+  const query = {};
+  if (req.body.role) {
+    query.text = "UPDATE p_heads SET DateOfFire=?, State=1, byUserId=? WHERE Id=?";
+    query.errText = "Не вдалося звільнити особу!";
+    query.succText = "Особу успішно звільнено із займаної посади!";
+  } else {
+    query.text = "UPDATE p_founds SET DateExit=?, State=1, byUserId=? WHERE Id=?";
+    query.errText = "Не вдалося вивести особу зі складу співзасновників!";
+    query.succText = "Особу успішно виведено зі складу співзасновників!";
+  }
+  db.query(query.text, [req.body.date, req.body.editor, req.body.id], (err, results) => {
+      if (err) return res.status(500).json({ message: query.errText, error: err });
+      res.status(200).json(query.succText);
+    });
+  db.end();
+}
+
 module.exports = {
   getSome, getOne, getSameNames, getSameIdent, insertPersonFounder, insertPersonHead,
-  updatePersonFounder, updatePersonHead, updatePersonNewFounder, updatePersonNewHead
+  updatePersonFounder, updatePersonHead, updatePersonNewFounder, updatePersonNewHead, exitPerson
 };
