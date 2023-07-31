@@ -1,4 +1,5 @@
 const mysql2 = require('mysql2');
+const mysqlpro = require('mysql2/promise');
 const connData = require('./config.js');
 
 const convertDateToISO = (notISO) => {
@@ -98,19 +99,6 @@ const insertNewFounder = (db, req, res) => {
     });
 }
 
-const insertPersonFounder = (req, res) => {
-  const db = mysql2.createConnection(connData);
-  db.query("SHOW TABLE STATUS FROM `nop` LIKE 'peoples'", (err, result) => {
-    if (err) console.log(err)
-    else req.body.humanId = result[0].Auto_increment;
-  });
-  insertNewPerson(db, req, res);
-  setTimeout(() => {
-    insertNewFounder(db, req, res);
-    db.end();
-  }, "200");
-}
-
 const insertNewHead = (db, req, res) => {
   db.query("INSERT INTO p_heads(HumanId, Enterprise, Posada, InCombination, SequrBoss, DateStartWork, byUserId) VALUES(?, ?, ?, ?, ?, ?, ?)",
     [req.body.humanId, req.body.enterpr, req.body.posada, req.body.inCombination, req.body.sequrBoss, convertDateToISO(req.body.dateStartWork), req.body.editor], (err, results) => {
@@ -118,18 +106,16 @@ const insertNewHead = (db, req, res) => {
       res.status(200).json("Дані про нового керівника збережено успішно!");
     });
 }
-
-const insertPersonHead = (req, res) => {
+const insertPerson = async (req, res) => {
+  const dbpro = await mysqlpro.createConnection(connData);
+  const [result] = await dbpro.execute("SHOW TABLE STATUS FROM `nop` LIKE 'peoples'");
+  req.body.humanId = result[0].Auto_increment;
+  dbpro.end();
   const db = mysql2.createConnection(connData);
-  db.query("SHOW TABLE STATUS FROM `nop` LIKE 'peoples'", (err, result) => {
-    if (err) console.log(err)
-    else req.body.humanId = result[0].Auto_increment;
-  });
   insertNewPerson(db, req, res);
-  setTimeout(() => {
-    insertNewHead(db, req, res);
-    db.end();
-  }, "200");
+  if (req.body.personType === 1) insertNewFounder(db, req, res);
+  if (req.body.personType === 2) insertNewHead(db, req, res);
+  db.end();
 }
 
 const updatePerson = (db, req, res) => {
@@ -140,39 +126,42 @@ const updatePerson = (db, req, res) => {
     });
 }
 
-const updatePersonFounder = (req, res) => {
+const updatePersonOnly = (req, res) => {
   const db = mysql2.createConnection(connData);
   updatePerson(db, req, res);
+  res.status(200).json("Зміни даних про особу збережено успішно!");
+  db.end();
+}
+
+const updatePersonFounder = (db, req, res) => {
   db.query("UPDATE p_founds SET DateEnter=?, StatutPart=?, byUserId=? WHERE Id=?",
     [convertDateToISO(req.body.dateEnter), req.body.statutPart, req.body.editor, req.body.id], (err, results) => {
       if (err) return res.status(500).json({ message: 'Не вдалося оновити дані про співзасновника!', error: err });
       res.status(200).json("Зміни даних про співзасновника збережено успішно!");
     });
-  db.end();
 }
 
-const updatePersonHead = (req, res) => {
-  const db = mysql2.createConnection(connData);
-  updatePerson(db, req, res);
+const updatePersonHead = (db, req, res) => {
   db.query("UPDATE p_heads SET Posada=?, InCombination=?, SequrBoss=?, DateStartWork=?, byUserId=? WHERE Id=?",
     [req.body.posada, req.body.inCombination, req.body.sequrBoss, convertDateToISO(req.body.dateStartWork), req.body.editor, req.body.id], (err, results) => {
       if (err) return res.status(500).json({ message: 'Не вдалося оновити дані про керівника!', error: err });
       res.status(200).json("Зміни даних про керівника збережено успішно!");
     });
+}
+
+const updatePersonPlace = (req, res) => {
+  const db = mysql2.createConnection(connData);
+  if (req.body.updatePerson) updatePerson(db, req, res);
+  if (req.body.personType === 1) updatePersonFounder(db, req, res);
+  if (req.body.personType === 2) updatePersonHead(db, req, res);
   db.end();
 }
 
-const updatePersonNewFounder = (req, res) => {
+const updatePersonNewPlace = (req, res) => {
   const db = mysql2.createConnection(connData);
-  updatePerson(db, req, res);
-  insertNewFounder(db, req, res);
-  db.end();
-}
-
-const updatePersonNewHead = (req, res) => {
-  const db = mysql2.createConnection(connData);
-  updatePerson(db, req, res);
-  insertNewHead(db, req, res);
+  if (req.body.updatePerson) updatePerson(db, req, res);
+  if (req.body.personType === 1) insertNewFounder(db, req, res);
+  if (req.body.personType === 2) insertNewHead(db, req, res);
   db.end();
 }
 
@@ -196,6 +185,5 @@ const exitPerson = (req, res) => {
 }
 
 module.exports = {
-  getSome, getOne, getSameNames, getSameIdent, insertPersonFounder, insertPersonHead,
-  updatePersonFounder, updatePersonHead, updatePersonNewFounder, updatePersonNewHead, exitPerson
+  getSome, getOne, getSameNames, getSameIdent, insertPerson, updatePersonOnly, updatePersonPlace, updatePersonNewPlace, exitPerson
 };
