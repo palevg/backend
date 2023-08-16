@@ -46,7 +46,22 @@ app.post('/upload', checkAuth, upload.single('image'), (req, res) => {
 app.get('/sessions', checkAuth, UserController.getSessionsList);
 
 app.post('/enterprs', checkAuth, FirmaController.getSome);
-app.get('/enterprs/:id', checkAuth, FirmaController.getOne);
+app.get('/enterpr/:id', checkAuth, FirmaController.getOneShort);
+app.get('/enterprs/:id', checkAuth, FirmaController.getOneFull);
+app.get('/enterprs/with/:ident', checkAuth, FirmaController.getSameIdent);
+app.post('/enterpr/new', checkAuth, FirmaController.insertNewEnterpr);
+app.patch('/enterpr/edit', checkAuth, FirmaController.updateEnterpr);
+app.get('/founders/:id', checkAuth, FirmaController.getFounders);
+app.get('/foundersent/:id', checkAuth, FirmaController.getFoundersE);
+app.get('/heads/:id', checkAuth, FirmaController.getHeads);
+app.patch('/order/edit', checkAuth, FirmaController.updateOrder);
+app.patch('/order/close', checkAuth, FirmaController.closeOrder);
+app.get('/orders/:id', checkAuth, FirmaController.getOrders);
+app.post('/license/new', checkAuth, FirmaController.insertNewLicense);
+app.get('/licenses/:id', checkAuth, FirmaController.getLicenses);
+app.get('/regions', checkAuth, FirmaController.getRegions);
+app.get('/lictypes', checkAuth, FirmaController.getLicTypes);
+
 app.post('/peoples', checkAuth, PersonController.getSome);
 app.get('/peoples/:id', checkAuth, PersonController.getOne);
 app.post('/peoples/new', checkAuth, PersonController.insertPerson);
@@ -56,8 +71,7 @@ app.patch('/peoples/editperson', checkAuth, PersonController.updatePersonOnly);
 app.patch('/peoples/edit', checkAuth, PersonController.updatePersonPlace);
 app.patch('/peoples/editnewplace', checkAuth, PersonController.updatePersonNewPlace);
 app.patch('/peoples/exit', checkAuth, PersonController.exitPerson);
-app.get('/founders/:id', checkAuth, FirmaController.getFounders);
-app.get('/heads/:id', checkAuth, FirmaController.getHeads);
+
 // app.post('/enterprs', checkAuth, enterprCreateValidation, handleValidationErrors, FirmaController.create);
 // app.delete('/enterprs/:id', checkAuth, FirmaController.remove);
 // app.patch('/enterprs/:id', checkAuth, enterprCreateValidation, handleValidationErrors, FirmaController.update);
