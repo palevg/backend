@@ -108,8 +108,8 @@ const insertNewHead = (db, req, res) => {
 }
 const insertPerson = async (req, res) => {
   const dbpro = await mysqlpro.createConnection(connData);
-  const [result] = await dbpro.execute("SHOW TABLE STATUS FROM `nop` LIKE 'peoples'");
-  req.body.humanId = result[0].Auto_increment;
+  const [result] = await dbpro.execute("SELECT MAX(Id) AS Id FROM peoples");
+  req.body.humanId = result[0].Id + 1;
   dbpro.end();
   const db = mysql2.createConnection(connData);
   insertNewPerson(db, req, res);

@@ -57,6 +57,15 @@ const getSome = (req, res) => {
   db.end();
 };
 
+const getEnterprNames = (req, res) => {
+  const db = mysql2.createConnection(connData);
+  db.query("SELECT Id, Ident, FullName, Shevron FROM enterprs WHERE Id<>317 AND Id<>? ORDER BY KeyName", req.params.id, (err, results) => {
+    if (err) return res.status(500).json({ message: 'Не вдалося отримати список підприємств' });
+    res.json(results)
+  });
+  db.end();
+};
+
 const getOneShort = (req, res) => {
   const db = mysql2.createConnection(connData);
   db.query("SELECT * FROM enterprs WHERE Id=?", req.params.id, (err, results) => {
@@ -78,7 +87,7 @@ const getOneFull = (req, res) => {
       fullInfo = results;
       const dbAdd = mysql2.createConnection(connData);
       fullInfo[0].AfilEnterp &&
-        dbAdd.query("SELECT Id, Ident, FullName FROM enterprs WHERE Id IN (" + fullInfo[0].AfilEnterp + ") ORDER BY KeyName", (err, listEnt) => {
+        dbAdd.query("SELECT Id, Ident, FullName, Shevron FROM enterprs WHERE Id IN (" + fullInfo[0].AfilEnterp + ") ORDER BY KeyName", (err, listEnt) => {
           listEnt.map((itemAfil) => { itemAfil.res_key = 1; });
           fullInfo = [...fullInfo, ...listEnt];
         });
@@ -124,15 +133,15 @@ const getOneFull = (req, res) => {
 
 const insertNewEnterpr = async (req, res) => {
   const dbpro = await mysqlpro.createConnection(connData);
-  const [result] = await dbpro.execute("SHOW TABLE STATUS FROM `nop` LIKE 'enterprs'");
-  req.body.newId = result[0].Auto_increment;
+  const [result] = await dbpro.execute("SELECT MAX(Id) AS Id FROM enterprs");
+  req.body.newId = result[0].Id + 1;
   dbpro.end();
   const db = mysql2.createConnection(connData);
-  db.query("INSERT INTO enterprs(Ident, DateCreate, KeyName, FullName, Region, StatutSize, AddressDeUre, AddressDeFacto, Phones, Faxes, RosRah, RosUst, RosMFO, AddInfo, Shevron, Podatok, StateRisk, byUserId) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  db.query("INSERT INTO enterprs(Ident, DateCreate, KeyName, FullName, Region, OPForm, FormVlasn, VidDijal, StatutSize, AddressDeUre, AddressDeFacto, Phones, Faxes, RosRah, RosUst, RosMFO, AfilEnterp, AddInfo, Shevron, Podatok, StateRisk, byUserId) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     [req.body.ident, convertDateToISO(req.body.dateCreate), req.body.keyName, req.body.fullName, req.body.region,
-    req.body.statutSize, req.body.addressDeUre, req.body.addressDeFacto, req.body.phones, req.body.faxes, req.body.rosRah,
-    req.body.rosUst, req.body.rosMFO, req.body.addInfo, req.body.shevron, req.body.podatok, req.body.stateRisk,
-    req.body.editor], (err, results) => {
+    req.body.opForm, req.body.formVlasn, req.body.vidDijal, req.body.statutSize, req.body.addressDeUre, req.body.addressDeFacto,
+    req.body.phones, req.body.faxes, req.body.rosRah, req.body.rosUst, req.body.rosMFO, req.body.afilEnterp, req.body.addInfo,
+    req.body.shevron, req.body.podatok, req.body.stateRisk, req.body.editor], (err, results) => {
       if (err) return res.status(500).json({ message: 'Не вдалося зберегти дані про нову юридичну особу!', error: err });
     });
   db.query("INSERT INTO orders SET EnterpriseId=?, DateZajav=CURDATE(), byUserId=?",
@@ -145,14 +154,23 @@ const insertNewEnterpr = async (req, res) => {
 
 const updateEnterpr = (req, res) => {
   const db = mysql2.createConnection(connData);
-  db.query("UPDATE enterprs SET DateCreate=?, KeyName=?, FullName=?, Region=?, StatutSize=?, AddressDeUre=?, AddressDeFacto=?, Phones=?, Faxes=?, RosRah=?, RosUst=?, RosMFO=?, AddInfo=?, Shevron=?, Podatok=?, StateRisk=?, byUserId=? WHERE Id=?",
-    [convertDateToISO(req.body.dateCreate), req.body.keyName, req.body.fullName, req.body.region, req.body.statutSize,
-    req.body.addressDeUre, req.body.addressDeFacto, req.body.phones, req.body.faxes, req.body.rosRah,
-    req.body.rosUst, req.body.rosMFO, req.body.addInfo, req.body.shevron, req.body.podatok, req.body.stateRisk,
-    req.body.editor, req.body.id], (err, results) => {
+  db.query("UPDATE enterprs SET DateCreate=?, KeyName=?, FullName=?, Region=?, OPForm=?, FormVlasn=?, VidDijal=?, StatutSize=?, AddressDeUre=?, AddressDeFacto=?, Phones=?, Faxes=?, RosRah=?, RosUst=?, RosMFO=?, AfilEnterp=?, AddInfo=?, Shevron=?, Podatok=?, StateRisk=?, byUserId=? WHERE Id=?",
+    [convertDateToISO(req.body.dateCreate), req.body.keyName, req.body.fullName, req.body.region, req.body.opForm,
+    req.body.formVlasn, req.body.vidDijal, req.body.statutSize, req.body.addressDeUre, req.body.addressDeFacto,
+    req.body.phones, req.body.faxes, req.body.rosRah, req.body.rosUst, req.body.rosMFO, req.body.afilEnterp, req.body.addInfo,
+    req.body.shevron, req.body.podatok, req.body.stateRisk, req.body.editor, req.body.id], (err, results) => {
       if (err) return res.status(500).json({ message: 'Не вдалося оновити дані про юридичну особу!', error: err });
       res.status(200).json("Зміни даних про юридичну особу збережено успішно!");
     });
+  db.end();
+}
+
+const getAfilEnterprs = (req, res) => {
+  const db = mysql2.createConnection(connData);
+  db.query("SELECT Id, Ident, FullName, Shevron FROM enterprs WHERE Id IN (" + req.body.list + ") ORDER BY KeyName", (err, results) => {
+    if (err) return res.status(500).json({ message: 'Не вдалося отримати дані про афільовані підприємства' });
+    res.json(results);
+  });
   db.end();
 }
 
@@ -251,6 +269,33 @@ const getRegions = (req, res) => {
   db.end();
 }
 
+const getOPForms = (req, res) => {
+  const db = mysql2.createConnection(connData);
+  db.query("SELECT * FROM opforms ORDER BY Name", (err, results) => {
+    if (err) return res.status(500).json({ message: 'Не вдалося отримати дані про організаційно-правові форми юридичних осіб' });
+    res.json(results);
+  });
+  db.end();
+}
+
+const getFormVlasn = (req, res) => {
+  const db = mysql2.createConnection(connData);
+  db.query("SELECT * FROM formvlsn", (err, results) => {
+    if (err) return res.status(500).json({ message: 'Не вдалося отримати дані про форми власності юридичних осіб' });
+    res.json(results);
+  });
+  db.end();
+}
+
+const getActivities = (req, res) => {
+  const db = mysql2.createConnection(connData);
+  db.query("SELECT * FROM viddijal ORDER BY Name", (err, results) => {
+    if (err) return res.status(500).json({ message: 'Не вдалося отримати дані про види діяльності юридичних осіб' });
+    res.json(results);
+  });
+  db.end();
+}
+
 const getLicTypes = (req, res) => {
   const db = mysql2.createConnection(connData);
   db.query("SELECT * FROM lic_type", (err, results) => {
@@ -261,6 +306,7 @@ const getLicTypes = (req, res) => {
 }
 
 module.exports = {
-  getSome, getOneShort, getOneFull, insertNewEnterpr, updateEnterpr, getFounders, getFoundersE, getHeads,
-  getOrders, getLicenses, getSameIdent, updateOrder, closeOrder, insertNewLicense, getRegions, getLicTypes
+  getSome, getEnterprNames, getOneShort, getOneFull, insertNewEnterpr, updateEnterpr, getAfilEnterprs,
+  getFounders, getFoundersE, getHeads, getOrders, getLicenses, getSameIdent, updateOrder, closeOrder,
+  insertNewLicense, getRegions, getOPForms, getFormVlasn, getActivities, getLicTypes
 };

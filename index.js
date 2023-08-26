@@ -46,11 +46,13 @@ app.post('/upload', checkAuth, upload.single('image'), (req, res) => {
 app.get('/sessions', checkAuth, UserController.getSessionsList);
 
 app.post('/enterprs', checkAuth, FirmaController.getSome);
+app.get('/enterprlist/:id', checkAuth, FirmaController.getEnterprNames);
 app.get('/enterpr/:id', checkAuth, FirmaController.getOneShort);
 app.get('/enterprs/:id', checkAuth, FirmaController.getOneFull);
 app.get('/enterprs/with/:ident', checkAuth, FirmaController.getSameIdent);
 app.post('/enterpr/new', checkAuth, FirmaController.insertNewEnterpr);
 app.patch('/enterpr/edit', checkAuth, FirmaController.updateEnterpr);
+app.post('/enterprs/listafil', checkAuth, FirmaController.getAfilEnterprs);
 app.get('/founders/:id', checkAuth, FirmaController.getFounders);
 app.get('/foundersent/:id', checkAuth, FirmaController.getFoundersE);
 app.get('/heads/:id', checkAuth, FirmaController.getHeads);
@@ -59,8 +61,11 @@ app.patch('/order/close', checkAuth, FirmaController.closeOrder);
 app.get('/orders/:id', checkAuth, FirmaController.getOrders);
 app.post('/license/new', checkAuth, FirmaController.insertNewLicense);
 app.get('/licenses/:id', checkAuth, FirmaController.getLicenses);
-app.get('/regions', checkAuth, FirmaController.getRegions);
-app.get('/lictypes', checkAuth, FirmaController.getLicTypes);
+app.get('/regions', FirmaController.getRegions);
+app.get('/opforms', FirmaController.getOPForms);
+app.get('/formvlasn', FirmaController.getFormVlasn);
+app.get('/activities', FirmaController.getActivities);
+app.get('/lictypes', FirmaController.getLicTypes);
 
 app.post('/peoples', checkAuth, PersonController.getSome);
 app.get('/peoples/:id', checkAuth, PersonController.getOne);

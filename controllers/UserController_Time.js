@@ -1,5 +1,4 @@
 const mysql2 = require('mysql2');
-const mysqlpro = require('mysql2/promise');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const connData = require('./config.js');
@@ -12,9 +11,15 @@ const writeConnectInfo = (sql, data) => {
   db_acc.end();
 }
 
+// const passHashing = async (pass) => {
+//   const salt = await bcrypt.genSalt(10);
+//   const hash = await bcrypt.hash(pass, salt);
+//   return hash;
+// }
+
 const login = (req, res) => {
   const db = mysql2.createConnection(connData);
-  db.query("SELECT * FROM users WHERE Email=?", req.body.email, async (err, data) => {
+  db.query("SELECT * FROM users WHERE Email=?", req.body.email, (err, data) => {
     if (err) return res.status(500).json({ message: 'Не вдалося авторизуватися!', error: err });
 
     if (data.length === 0) {
@@ -35,12 +40,15 @@ const login = (req, res) => {
       return res.status(400).json({ message: 'Не вірний логін або пароль!' });
     }
 
-    const dbpro = await mysqlpro.createConnection(connData);
-    const [result] = await dbpro.execute("SELECT MAX(Id) AS Id FROM sessions");
-    data[0].accId = result[0].Id + 1;
-    dbpro.end();
-
     const db_acc = mysql2.createConnection(connData);
+    // db_acc.query("SHOW TABLE STATUS FROM `nop` LIKE 'sessions'", (err, result) => {
+    //   if (err) console.log(err)
+    //   else data[0].accId = result[0].Auto_increment;
+    // });
+    db_acc.query("SELECT MAX(id) AS id FROM sessions", (err, result) => {
+      if (err) console.log(err)
+      else data[0].accId = result[0].id + 1;
+    });
     db_acc.query("INSERT INTO sessions(UserId, UserName, Level, DateTimeStart, HostIP) VALUES(?, ?, ?, ?, ?)",
       [data[0].Id, data[0].FullName, data[0].accLevel, new Date().toLocaleTimeString("uk") + " " + new Date().toLocaleDateString("uk"), req.body.ip],
       (err, result) => {
@@ -48,14 +56,14 @@ const login = (req, res) => {
       });
     db_acc.end();
 
-    data[0].acc = 1;
-    if (bcrypt.compareSync("user", data[0].accLevel)) data[0].acc = 2;
-    if (bcrypt.compareSync("user-pro", data[0].accLevel)) data[0].acc = 3;
-
-    const token = jwt.sign({ id: data[0].Id, accId: data[0].accId, acc: data[0].acc }, process.env.JWT_KEY, { expiresIn: '30d' });
-    const { Password, ...userData } = data[0];
-
-    res.status(200).json({ ...userData, token });
+    setTimeout(() => {
+      data[0].acc = 1;
+      if (bcrypt.compareSync("user", data[0].accLevel)) data[0].acc = 2;
+      if (bcrypt.compareSync("user-pro", data[0].accLevel)) data[0].acc = 3;
+      const token = jwt.sign({ id: data[0].Id, accId: data[0].accId, acc: data[0].acc }, process.env.JWT_KEY, { expiresIn: '30d' });
+      const { Password, ...userData } = data[0];
+      res.status(200).json({ ...userData, token });
+    }, "800");
   });
   db.end();
 };
@@ -126,3 +134,42 @@ const getSessionsList = (req, res) => {
 };
 
 module.exports = { login, update, logout, getMe, getSessionsList };
+
+// export const register = async (req, res) => {
+//   try {
+//     const password = req.body.password;
+//     const salt = await bcrypt.genSalt(10);
+//     const hash = await bcrypt.hash(password, salt);
+
+//     const doc = new UserModel({
+//       email: req.body.email,
+//       fullName: req.body.fullName,
+//       avatarUrl: req.body.avatarUrl,
+//       Password: hash,
+//     });
+
+//     const user = await doc.save();
+
+//     const token = jwt.sign(
+//       {
+//         _id: user._id,
+//       },
+//       process.env.JWT_KEY,
+//       {
+//         expiresIn: '30d',
+//       },
+//     );
+
+//     const { Password, ...userData } = user._doc;
+
+//     res.json({
+//       ...userData,
+//       token,
+//     });
+//   } catch (err) {
+//     console.log(err);
+//     res.status(500).json({
+//       message: 'Не вдалося зареєструватись',
+//     });
+//   }
+// };
