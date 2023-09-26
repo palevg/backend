@@ -45,7 +45,7 @@ app.post('/upload', checkAuth, upload.single('image'), (req, res) => {
 
 app.get('/sessions', checkAuth, UserController.getSessionsList);
 
-app.post('/enterprs', checkAuth, FirmaController.getSome);
+app.post('/enterprs', FirmaController.getSome);
 app.get('/enterprlist/:id', checkAuth, FirmaController.getEnterprNames);
 app.get('/enterpr/:id', checkAuth, FirmaController.getOneShort);
 app.get('/enterprs/:id', checkAuth, FirmaController.getOneFull);
@@ -61,13 +61,15 @@ app.patch('/order/close', checkAuth, FirmaController.closeOrder);
 app.get('/orders/:id', checkAuth, FirmaController.getOrders);
 app.post('/license/new', checkAuth, FirmaController.insertNewLicense);
 app.get('/licenses/:id', checkAuth, FirmaController.getLicenses);
+app.patch('/license/edit', checkAuth, FirmaController.updateLicense);
+app.patch('/license/state', checkAuth, FirmaController.updateLicenseState);
 app.get('/regions', FirmaController.getRegions);
 app.get('/opforms', FirmaController.getOPForms);
 app.get('/formvlasn', FirmaController.getFormVlasn);
 app.get('/activities', FirmaController.getActivities);
 app.get('/lictypes', FirmaController.getLicTypes);
 
-app.post('/peoples', checkAuth, PersonController.getSome);
+app.post('/peoples', PersonController.getSome);
 app.get('/peoples/:id', checkAuth, PersonController.getOne);
 app.post('/peoples/new', checkAuth, PersonController.insertPerson);
 app.get('/peoples/with/:name', checkAuth, PersonController.getSameNames);

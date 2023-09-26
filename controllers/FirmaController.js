@@ -48,7 +48,7 @@ const getSome = (req, res) => {
   if (req.body.area === "1") {
     query += " Id IN (SELECT EnterpriseId FROM orders WHERE State=" + req.body.order;
   }
-  query += ") ORDER BY KeyName";
+  query += ")";
   const db = mysql2.createConnection(connData);
   db.query(query, (err, results) => {
     if (err) return res.status(500).json({ message: 'Не вдалося отримати дані' });
@@ -87,7 +87,7 @@ const getOneFull = (req, res) => {
       fullInfo = results;
       const dbAdd = mysql2.createConnection(connData);
       fullInfo[0].AfilEnterp &&
-        dbAdd.query("SELECT Id, Ident, FullName, Shevron FROM enterprs WHERE Id IN (" + fullInfo[0].AfilEnterp + ") ORDER BY KeyName", (err, listEnt) => {
+        dbAdd.query("SELECT Id, Ident, KeyName, FullName, Shevron FROM enterprs WHERE Id IN (" + fullInfo[0].AfilEnterp + ")", (err, listEnt) => {
           listEnt.map((itemAfil) => { itemAfil.res_key = 1; });
           fullInfo = [...fullInfo, ...listEnt];
         });
@@ -107,7 +107,7 @@ const getOneFull = (req, res) => {
         results.map((item) => { if (!item.res_key) item.res_key = 5; });
         fullInfo = [...fullInfo, ...results];
       });
-      dbAdd.query("SELECT * FROM licenze l, lic_type t WHERE l.TypeLicenze=t.Id AND l.EnterpriseId=? ORDER BY l.DateLicenz, t.Category", id, (err, results) => {
+      dbAdd.query("SELECT * FROM lic_type t, licenze l WHERE l.TypeLicenze=t.Id AND l.EnterpriseId=? ORDER BY l.DateLicenz, t.Category", id, (err, results) => {
         results.map((item) => { if (!item.res_key) item.res_key = 6; });
         fullInfo = [...fullInfo, ...results];
       });
@@ -212,7 +212,7 @@ const getOrders = (req, res) => {
 
 const getLicenses = (req, res) => {
   const db = mysql2.createConnection(connData);
-  db.query("SELECT * FROM licenze l, lic_type t WHERE l.TypeLicenze=t.Id AND l.EnterpriseId=? ORDER BY l.DateLicenz, t.Category", req.params.id, (err, results) => {
+  db.query("SELECT * FROM lic_type t, licenze l WHERE l.TypeLicenze=t.Id AND l.EnterpriseId=? ORDER BY l.DateLicenz, t.Category", req.params.id, (err, results) => {
     if (err) return res.status(500).json({ message: 'Не вдалося отримати дані про ліцензії підприємства' });
     res.json(results);
   });
@@ -256,6 +256,27 @@ const insertNewLicense = (req, res) => {
     convertDateToISO(req.body.dateClose), req.body.reasonStart, req.body.editor], (err, results) => {
       if (err) return res.status(500).json({ message: 'Не вдалося зберегти дані про нову ліцензію!', error: err });
       res.status(200).json("Дані про нову ліцензію для юридичної особи збережено успішно!");
+    });
+  db.end();
+}
+
+const updateLicense = (req, res) => {
+  const db = mysql2.createConnection(connData);
+  db.query("UPDATE licenze SET TypeLicenze=?, SerLicenze=?, NumLicenze=?, DateLicenz=?, DateClose=?, State=?, ReasonStart=?, ReasonClose=?, byUserId=? WHERE Id=?",
+    [req.body.typeLicenze, req.body.serLicenze, req.body.numLicenze, convertDateToISO(req.body.dateLicenz), convertDateToISO(req.body.dateClose),
+      req.body.state, req.body.reasonStart, req.body.reasonClose, req.body.editor, req.body.id], (err, results) => {
+      if (err) return res.status(500).json({ message: 'Не вдалося змінити дані про ліцензію!', error: err });
+      res.status(200).json("Дані про ліцензію для юридичної особи змінено успішно!");
+    });
+  db.end();
+}
+
+const updateLicenseState = (req, res) => {
+  const db = mysql2.createConnection(connData);
+  db.query("UPDATE licenze SET State=?, ReasonClose=?, byUserId=? WHERE Id=?",
+    [req.body.state, req.body.reasonClose, req.body.editor, req.body.id], (err, results) => {
+      if (err) return res.status(500).json({ message: 'Не вдалося змінити статус ліцензії!', error: err });
+      res.status(200).json("Статус ліцензії для юридичної особи змінено успішно!");
     });
   db.end();
 }
@@ -308,5 +329,5 @@ const getLicTypes = (req, res) => {
 module.exports = {
   getSome, getEnterprNames, getOneShort, getOneFull, insertNewEnterpr, updateEnterpr, getAfilEnterprs,
   getFounders, getFoundersE, getHeads, getOrders, getLicenses, getSameIdent, updateOrder, closeOrder,
-  insertNewLicense, getRegions, getOPForms, getFormVlasn, getActivities, getLicTypes
+  insertNewLicense, updateLicense, updateLicenseState, getRegions, getOPForms, getFormVlasn, getActivities, getLicTypes
 };
