@@ -39,19 +39,19 @@ const getOne = (req, res) => {
       results[0].res_key = 0;
       fullInfo = results;
       const dbAdd = mysql2.createConnection(connData);
-      dbAdd.query("SELECT p.Id,f.*,e.FullName FROM peoples p, p_founds f, enterprs e WHERE p.Id=f.HumanId AND e.Id=f.Enterprise AND p.Id=? ORDER BY f.DateEnter", req.params.id, (err, results) => {
+      dbAdd.query("SELECT f.*,e.FullName FROM peoples p, p_founds f, enterprs e WHERE p.Id=f.HumanId AND e.Id=f.Enterprise AND p.Id=? ORDER BY f.DateEnter", req.params.id, (err, results) => {
         results.map((item) => {
           if (!item.res_key) item.res_key = 1;
         });
         fullInfo = [...fullInfo, ...results];
       });
-      dbAdd.query("SELECT p.Id,h.*,e.FullName FROM peoples p, p_heads h, enterprs e WHERE p.Id=h.HumanId AND e.Id=h.Enterprise AND p.Id=? ORDER BY h.DateStartWork", req.params.id, (err, results) => {
+      dbAdd.query("SELECT h.*,e.FullName FROM peoples p, p_heads h, enterprs e WHERE p.Id=h.HumanId AND e.Id=h.Enterprise AND p.Id=? ORDER BY h.DateStartWork", req.params.id, (err, results) => {
         results.map((item) => {
           if (!item.res_key) item.res_key = 2;
         });
         fullInfo = [...fullInfo, ...results];
       });
-      dbAdd.query("SELECT p.Id,s.*,e.FullName FROM peoples p, p_sequr s, enterprs e WHERE p.Id=s.HumanId AND e.Id=s.Enterprise AND p.Id=?", req.params.id, (err, results) => {
+      dbAdd.query("SELECT s.*,e.FullName FROM peoples p, p_sequr s, enterprs e WHERE p.Id=s.HumanId AND e.Id=s.Enterprise AND p.Id=?", req.params.id, (err, results) => {
         results.map((item) => {
           if (!item.res_key) item.res_key = 3;
         });
@@ -137,7 +137,6 @@ const updatePersonFounder = (db, req, res) => {
   db.query("UPDATE p_founds SET DateEnter=?, StatutPart=?, byUserId=? WHERE Id=?",
     [convertDateToISO(req.body.dateEnter), req.body.statutPart, req.body.editor, req.body.id], (err, results) => {
       if (err) return res.status(500).json({ message: 'Не вдалося оновити дані про співзасновника!', error: err });
-      res.status(200).json("Зміни даних про співзасновника збережено успішно!");
     });
 }
 
@@ -145,15 +144,16 @@ const updatePersonHead = (db, req, res) => {
   db.query("UPDATE p_heads SET Posada=?, InCombination=?, SequrBoss=?, DateStartWork=?, byUserId=? WHERE Id=?",
     [req.body.posada, req.body.inCombination, req.body.sequrBoss, convertDateToISO(req.body.dateStartWork), req.body.editor, req.body.id], (err, results) => {
       if (err) return res.status(500).json({ message: 'Не вдалося оновити дані про керівника!', error: err });
-      res.status(200).json("Зміни даних про керівника збережено успішно!");
     });
 }
 
 const updatePersonPlace = (req, res) => {
   const db = mysql2.createConnection(connData);
-  if (req.body.updatePerson) updatePerson(db, req, res);
-  if (req.body.personType === 1) updatePersonFounder(db, req, res);
-  if (req.body.personType === 2) updatePersonHead(db, req, res);
+  req.body.updatePerson && updatePerson(db, req, res);
+  req.body.updatePlace && req.body.personType === 1 && updatePersonFounder(db, req, res);
+  req.body.updatePlace && req.body.personType === 2 && updatePersonHead(db, req, res);
+  req.body.personType === 1 && res.status(200).json("Зміни даних про співзасновника збережено успішно!");
+  req.body.personType === 2 && res.status(200).json("Зміни даних про керівника збережено успішно!");
   db.end();
 }
 
